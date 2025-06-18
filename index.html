@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Token Balance Checker (Holesky Testnet)</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <h1>ERC-20 Token Balance (Holesky)</h1>
+  <button id="getBalance">Get Token Balance</button>
+  <p id="result">Balance: N/A</p>
+
+  <script>
+    const tokenAddress = "0x7a1Db99818A14612903D6546Be9510c677B272b2"; 
+    const tokenABI = [
+      // Minimal ABI for balanceOf
+      "function balanceOf(address) view returns (uint256)",
+      "function decimals() view returns (uint8)"
+    ];
+
+    const getBalanceBtn = document.getElementById("getBalance");
+    const resultText = document.getElementById("result");
+
+    getBalanceBtn.addEventListener("click", async () => {
+      try {
+        if (!window.ethereum) {
+          alert("MetaMask not detected.");
+          return;
+        }
+
+        // Request MetaMask connection
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const userAddress = await signer.getAddress();
+
+        // Check for Holesky
+        const { chainId } = await provider.getNetwork();
+        if (chainId.toString() !== "17000") {
+          alert("Please switch MetaMask to the Holesky testnet.");
+          return;
+        }
+
+        // Create token contract
+        const contract = new ethers.Contract(tokenAddress, tokenABI, provider);
+        
+        // Fetch decimals for formatting
+        const decimals = await contract.decimals();
+
+        // Call balanceOf for current user
+        const rawBalance = await contract.balanceOf(userAddress);
+        const formatted = ethers.formatUnits(rawBalance, decimals);
+
+        resultText.textContent = `Balance: ${formatted} tokens`;
+      } catch (err) {
+        console.error(err);
+        resultText.textContent = "Error retrieving balance.";
+      }
+    });
+  </script>
+</body>
+</html>
